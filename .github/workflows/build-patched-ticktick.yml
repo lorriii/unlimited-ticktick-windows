@@ -34,8 +34,19 @@ jobs:
           Write-Host "Downloading target file from ${{ inputs.app_url }}..."
           Invoke-WebRequest -Uri "${{ inputs.app_url }}" -OutFile "TickTick.exe"
 
+      - name: Debug downloaded file
+        shell: pwsh
+        run: |
+          $file = Get-Item TickTick.exe
+          Write-Host "Size: $($file.Length) bytes"
+          $bytes = [System.IO.File]::ReadAllBytes($file.FullName)[0..3]
+          Write-Host "First bytes: $([System.BitConverter]::ToString($bytes))"
+          if ($bytes[0] -eq 0x3C) {
+              Write-Host "WARNING: Downloaded HTML, not EXE!"
+              Get-Content $file.FullName -First 5
+          }
+
       - name: Run Patcher
-        # We can just build and run directly via dotnet run
         run: dotnet run -- "TickTick.exe"
 
       - name: Prepare Release Package
